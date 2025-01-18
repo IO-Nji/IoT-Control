@@ -24,27 +24,28 @@ Functions:
 - ring: Draws a ring (circle without fill) on the display.
 - rect: Draws a rectangle on the display.
 - character: Draws a single character on the display.
-- prnt_st: Prints a string of text on the display.
-- yCntr_st: Centers and prints text on a specific line.
-- draw_horizontal_bargraph: Draws a horizontal bar graph on the display.
+- print_st: Prints a string of text on the display.
+- print_yc: Centers and prints text on a specific line.
+- drawHorizontalBargraph: Draws a horizontal bar graph on the display.
 - drawRoundClockFaceNumbers: Draws numbers on the round clock face.
 - drawDegrees: Draws degree markers on the display.
 - drawBorders: Draws border rings on the display.
 - draw_scale_ticks: Draws scale ticks on the clock face.
-- showXYZacc: Displays accelerometer data.
-- showXYZgyr: Displays gyroscope data.
-- draw_pie: Draws a pie shape on the display.
-- drawFaceONE, drawFaceTWO, drawFaceTHREE: Draws different round faces on the display.
+- drawPie: Draws a pie shape on the display.
+- drawRoundTimer: Draws a round timer on the display.
+- drawRoundDashBoard: Draws a round dashboard on the display.
+- drawFaceTHREE: Draws a third round face on the display.
 - drawDigitalTime: Displays digital time.
 - infoBarGraph: Displays bar graphs for sensor data.
-- calculate_percentage: Calculates the percentage of a value within a range.
-- convert_to_range: Converts a value to a specified range.
-- convert_values_to_range: Converts three values to a specified range.
 - show_battery_level: Displays the battery level.
 - update_time: Updates the time counter.
 - clearDisplay: Clears the display.
+- convert_to_range: Converts a value to a specified range.
+- convert_values_to_range: Converts three values to a specified range.
 The main loop continuously updates the display with the current time, sensor data, and graphical elements.
-My GFX and Text from Tony Goodhew routines are included in full - enjoy# 15th January 2025
+
+CREDITS:
+GFX and Text from Tony Goodhew routines are included in full - enjoy# 15th January 2025
 """
 
 from machine import Pin,I2C,SPI,PWM,ADC # type: ignore
@@ -53,30 +54,29 @@ import time
 import math
 
 # PIN DEFINITIONS
-# SPI FOR DISPLAY
+# SPI for Display
 DC = 8
 CS = 9
 SCK = 10
 MOSI = 11
 RST = 12
 BL = 25
+# I2C for qmi8658 Accelerometer and Gyroscope
+SCL = 7
+SDA = 6
+# BATTERY VOLTAGE Measuring Pin
+Vbat_Pin = 29
 
 # DISPLAY SPECIFICATIONS
+# Dimensions
 width = 240
 height = 240
-# Display Centre Coordinates
+# Centre Coordinates
 xc = 120  
 yc = 120
 r = 120 
 
-# I2C FOR ACCELEROMETER
-SCL = 7
-SDA = 6
-
-# BATTERY VOLTAGE MEASURING PIN
-Vbat_Pin = 29
-
-# Define Clock Hand Lengths
+# Clock Hands Length
 mr = 100  # length of minite hand       
 hr = 70   # length of hour hand
 sr = 14  # length of second hand
@@ -86,40 +86,36 @@ h = 11
 m = 40
 s = 59
 
-#Cube settings
-# CUBE initial angle
+#CUBE SPECIFICATIONS
+# Initial angle
 angle_x = 0
 angle_y = 0
 angle_z = 0
-
-# Define the cube's vertices for a smaller cube
+# Scale factor for vertices
 scale_factor = 0.008
 cube_radius = 0.1
-
-# Define the cube's vertices for a smaller cube with rounded corners
-def round_corner(vertex, radius):
-    """Round the corners of a vertex by a given radius."""
-    return [v * (1 - radius) for v in vertex]
-
+# Cube vertices
 cube_vertices = [
-    round_corner([-24 * scale_factor, -24 * scale_factor, -24 * scale_factor], cube_radius),
-    round_corner([24 * scale_factor, -24 * scale_factor, -24 * scale_factor], cube_radius),
-    round_corner([24 * scale_factor, 24 * scale_factor, -24 * scale_factor], cube_radius),
-    round_corner([-24 * scale_factor, 24 * scale_factor, -24 * scale_factor], cube_radius),
-    round_corner([-24 * scale_factor, -24 * scale_factor, 24 * scale_factor], cube_radius),
-    round_corner([24 * scale_factor, -24 * scale_factor, 24 * scale_factor], cube_radius),
-    round_corner([24 * scale_factor, 24 * scale_factor, 24 * scale_factor], cube_radius),
-    round_corner([-24 * scale_factor, 24 * scale_factor, 24 * scale_factor], cube_radius)
+    [-24 * scale_factor, -24 * scale_factor, -24 * scale_factor],
+    [24 * scale_factor, -24 * scale_factor, -24 * scale_factor],
+    [24 * scale_factor, 24 * scale_factor, -24 * scale_factor],
+    [-24 * scale_factor, 24 * scale_factor, -24 * scale_factor],
+    [-24 * scale_factor, -24 * scale_factor, 24 * scale_factor],
+    [24 * scale_factor, -24 * scale_factor, 24 * scale_factor],
+    [24 * scale_factor, 24 * scale_factor, 24 * scale_factor],
+    [-24 * scale_factor, 24 * scale_factor, 24 * scale_factor]
 ]
-
-# Define the cube's edges
+# Cube edges
 cube_edges = [
     (0, 1), (1, 2), (2, 3), (3, 0),
     (4, 5), (5, 6), (6, 7), (7, 4),
     (0, 4), (1, 5), (2, 6), (3, 7)
 ]
 
-class LCD_1inch28(framebuf.FrameBuffer): # Waveshare RP2040 1.28" IPS LCD Board 
+# CLASS DEFINITIONS ------------------------------------------------------------------
+
+# Waveshare RP2040 1.28" IPS LCD Board Class
+class LCD_1inch28(framebuf.FrameBuffer): 
     def __init__(self):
         self.width = 240
         self.height = 240
@@ -432,6 +428,7 @@ class LCD_1inch28(framebuf.FrameBuffer): # Waveshare RP2040 1.28" IPS LCD Board
         self.spi.write(self.buffer)
         self.cs(1)
 
+# QMI8658 Accelerometer and Gyroscope Class
 class QMI8658(object):
     def __init__(self,address=0X6B):
         self._address = address
@@ -503,6 +500,7 @@ class QMI8658(object):
             xyz[i+3]=raw_xyz[i+3]*1.0/gyro_lsb_div
         return xyz
 
+# Cartesian Graph Class
 class CartesianGraph:
     def __init__(self, scale, origin_x, origin_y, width=50, height=20):
         self.scale = scale
@@ -552,6 +550,7 @@ class CartesianGraph:
             y2 = self.origin_y + self.height // 2 - int(self.values3[i] * self.scale)
             draw_line(x1, y1, x2, y2, color3)
 
+# Cube Class
 class Cube:
     def __init__(self, vertices, edges, scale_factor=1):
         self.vertices = [[v[0] * scale_factor, v[1] * scale_factor, v[2] * scale_factor] for v in vertices]
@@ -626,7 +625,8 @@ class Cube:
         self.angle_x %= 360
         self.angle_y %= 360
         self.angle_z %= 360
-    
+
+# Point Class
 class Point:
     # Draw a Point on the display
     def __init__(self,x,y):
@@ -634,10 +634,11 @@ class Point:
         self.Y=y
     def __str__(self):
         return "Point(%s,%s)"%(self.X,self.Y) 
-#DISPLAY DRAWING FUNCTIONS
 
+
+# DISPLAY - GRAPHICS and DRAWING FUNCTIONS
+# Draw a line
 def draw_line(x1, y1, x2, y2, color):
-    """Draw a line using hline and vline"""
     if x1 == x2:
         # Vertical line
         LCD.vline(x1, min(y1, y2), abs(y2 - y1), color)
@@ -664,10 +665,7 @@ def draw_line(x1, y1, x2, y2, color):
                 err += dx
                 y1 += sy
 
-def colourConverter(R,G,B): # Convert RGB888 to RGB565
-    return (((G&0b00011100)<<3) +((B&0b11111000)>>3)<<8) + (R&0b11111000)+((G&0b11100000)>>5)
-
-#Draw a Circle (With Fill)
+#Draw a Circle (Circle with Fill)
 def circle(x,y,r,c):
     LCD.hline(x-r,y,r*2,c)
     for i in range(1,r):
@@ -986,7 +984,7 @@ FONT = bytes([
 ])
       
 # Print Text as String
-def prnt_st(asci,xx,yy,sz,r,g,b):  
+def print_st(asci,xx,yy,sz,r,g,b):  
     if sz == 1: move = 6
     if sz == 2: move = 11
     if sz == 3: move = 17 
@@ -996,15 +994,94 @@ def prnt_st(asci,xx,yy,sz,r,g,b):
         xx = xx + move
 
 # Centres text on line y and print
-def yCntr_st(s,y,sz,r,g,b): 
+def print_yc(s,y,sz,r,g,b): 
     if sz == 1: w = 6
     if sz == 2: w = 11
     if sz == 3: w = 17 
     gap = int((width - len(s) * w)/2)
-    prnt_st(s,gap,y,sz,r,g,b)
+    print_st(s,gap,y,sz,r,g,b)
 
 
-#  FONT SUPPORT END --------------------------------------------
+# FONT SUPPORT END 
+
+
+# UTILITY FUNCTIONS --------------------------------------------------------
+
+# Board now setup  MAIN BELOW
+def end_point(theta, rr): # Calculate end of hand offsets
+    theta_rad = math.radians(theta)    
+    xx = int(rr * math.sin(theta_rad))
+    yy = -int(rr * math.cos(theta_rad))                     
+    return xx,yy
+
+# Convert RGB888 to RGB565
+def colourConverter(R,G,B): 
+    return (((G&0b00011100)<<3) +((B&0b11111000)>>3)<<8) + (R&0b11111000)+((G&0b11100000)>>5)
+
+# Cnvert value to a range
+def convert_to_range(value, min_value, max_value, min_range, max_range):
+    """
+    Convert a value to a range between -90 and 90.
+
+    :param value: The float value to convert.
+    :param min_value: The minimum value of the original range.
+    :param max_value: The maximum value of the original range.
+    :return: The converted value in the range -90 to 90.
+    """
+    if min_value >= max_value:
+        raise ValueError("min_value must be less than max_value")
+    if not (min_value <= value <= max_value):
+        raise ValueError("value must be between min_value and max_value")
+    
+    # Normalize the value to a range between 0 and 1
+    normalized_value = (value - min_value) / (max_value - min_value) #    
+    # Scale the normalized value to the range -90 to 90
+    scaled_value = normalized_value * min_range - max_range
+    scaled_value = normalized_value * (max_range - min_range) + min_range
+    return scaled_value
+
+# Convert three values to a range of values
+def convert_values_to_range(value1, value2, value3, min_value, max_value, min_range, max_range):
+    """
+    Convert three float values to a range between -90 and 90 and return them as integers.
+
+    :param value1: The first float value to convert.
+    :param value2: The second float value to convert.
+    :param value3: The third float value to convert.
+    :param min_value: The minimum value of the original range.
+    :param max_value: The maximum value of the original range.
+    :return: A tuple of three converted values as integers.
+    """
+    converted_value1 = int(convert_to_range(value1, min_value, max_value, min_range, max_range))
+    converted_value2 = int(convert_to_range(value2, min_value, max_value, min_range, max_range))
+    converted_value3 = int(convert_to_range(value3, min_value, max_value, min_range, max_range))
+    
+    return converted_value1, converted_value2, converted_value3
+
+# Update timer counter
+def update_time():
+    global s, m, h
+    s += 1
+    if s == 60:
+        s = 0
+        m += 1
+        if m == 60:
+            m = 0
+            h += 1
+            if h == 12:
+                h = 0
+
+# Round vertex corners
+def round_corners(vertices, radius):
+    """Round the corners of vertices by a given radius."""
+    return [[v * (1 - radius) for v in vertex] for vertex in vertices]
+
+
+# DRAWING FUNCTIONS ---------------------------------------------------------------
+
+#Clear the dislay
+def clearDisplay(c):
+    LCD.fill(c)
 
 def draw_line(x1, y1, x2, y2, color):
     """Draw a line using hline and vline"""
@@ -1033,16 +1110,9 @@ def draw_line(x1, y1, x2, y2, color):
             if e2 < dx:
                 err += dx
                 y1 += sy
+     
 
-    
-#  Board now setup  MAIN BELOW
-def end_point(theta, rr): # Calculate end of hand offsets
-    theta_rad = math.radians(theta)    
-    xx = int(rr * math.sin(theta_rad))
-    yy = -int(rr * math.cos(theta_rad))                     
-    return xx,yy
-
-       
+# SCREEN DISPLAY WIDGETS --------------------------------------------------------
 # draw logo 
 def drawLogo(origin_x=0, origin_y=0, scale=.8):
     coordinates = [
@@ -1059,9 +1129,8 @@ def drawLogo(origin_x=0, origin_y=0, scale=.8):
     for x1, y1, x2, y2 in coordinates:
         rect(int(x1 * scale) + origin_x, int(y1 * scale) + origin_y, int(x2 * scale) + origin_x, int(y2 * scale) + origin_y, color)
 
-# draw clock faceDraw Bargraph
-
-def draw_horizontal_bargraph(min_value, max_value, current_value, graph_color, border_color, bar_x = 40, bar_y = 90):
+# draw horizontal Bargraph
+def drawHorizontalBargraph(min_value, max_value, current_value, graph_color, border_color, bar_x = 40, bar_y = 90):
 
     """
     Draw a horizontal bargraph on the LCD display screen.
@@ -1072,6 +1141,10 @@ def draw_horizontal_bargraph(min_value, max_value, current_value, graph_color, b
     current_value (int): The current value to be displayed on the bargraph.
     graph_color (tuple): The color of the bargraph (R, G, B).
     border_color (tuple): The color of the rectangle border (R, G, B).
+
+    Example usage
+    draw_horizontal_bargraph(0, 100, 75, colourConverter(0, 255, 0), colourConverter(255, 255, 255))
+
     """
     # Define the bargraph dimensions and position
     bar_width = 20
@@ -1086,31 +1159,30 @@ def draw_horizontal_bargraph(min_value, max_value, current_value, graph_color, b
     # Draw the filled part of the bargraph
     rect(bar_x, bar_y, bar_x + filled_width, bar_y + bar_height, graph_color)
 
-# Example usage
-#draw_horizontal_bargraph(0, 100, 75, colourConverter(0, 255, 0), colourConverter(255, 255, 255))
-
+# Draw Clock Numbers 1 to 12 in a circle
 def drawRoundClockFaceNumbers():
-    prnt_st("7",70,186,1,250,255,250)
-    prnt_st("5",158,186,1,250,255,250)
-    prnt_st("8",42,160,1,250,255,250)
-    prnt_st("4",190,160,1,250,255,250)
-    prnt_st("10",40,70,1,250,255,250)
-    prnt_st("2",190,70,1,250,255,250)
-    prnt_st("11",70,35,1,250,255,250)
-    prnt_st("1",157,35,1,250,255,250)
+    print_st("7",70,186,1,250,255,250)
+    print_st("5",158,186,1,250,255,250)
+    print_st("8",42,160,1,250,255,250)
+    print_st("4",190,160,1,250,255,250)
+    print_st("10",40,70,1,250,255,250)
+    print_st("2",190,70,1,250,255,250)
+    print_st("11",70,35,1,250,255,250)
+    print_st("1",157,35,1,250,255,250)
 
-    yCntr_st("12",15,2,0,60,100)
-    yCntr_st("6",210,2,0,60,100)
-    prnt_st("9",17,115,2,0,60,100)
-    prnt_st("3",204,115,2,0,60,100)
+    print_yc("12",15,2,0,60,100)
+    print_yc("6",210,2,0,60,100)
+    print_st("9",17,115,2,0,60,100)
+    print_st("3",204,115,2,0,60,100)
     
+# Draw Degrees 0, 90, 180, 270 on the clock face
 def drawDegrees(): #TODO: rename 
-    yCntr_st("0",15,1,30,160,180)
-    yCntr_st("180",220,1,30,160,180)
-    prnt_st("270",17,115,1,30,160,180)
-    prnt_st("90",216,115,1,30,160,180)
+    print_yc("0",15,1,30,160,180)
+    print_yc("180",220,1,30,160,180)
+    print_st("270",17,115,1,30,160,180)
+    print_st("90",216,115,1,30,160,180)
     
-# Rings
+# Draw the clock face border and ring circles
 def drawBorders():
     circle(xc,yc,118,colourConverter(100,120,180))
     ring(xc,yc,114,colourConverter(20,80,255))
@@ -1118,7 +1190,6 @@ def drawBorders():
     ring(xc,yc,116,colourConverter(250,80,120))
     circle(xc,yc,114,colourConverter(100,180,120))
 
-r = 120  # Tick outer radius - longer radius to stick out by 2 pixels
 # Draw the scale ticks -  lines from centre   
 def draw_scale_ticks():
     for p in range(0, 360, 30):
@@ -1126,26 +1197,9 @@ def draw_scale_ticks():
         LCD.line(120, 120, 120 + hxn, 120 + hyn, colourConverter(255, 255, 255))
 
     #Read XYZ Values form APDS
-def showXYZacc(xOrigin,yOrigin):
-    X_acc = "{:.2f}".format(qmi8658.Read_XYZ()[0])
-    Y_acc = "{:.2f}".format(qmi8658.Read_XYZ()[1])
-    Z_acc = "{:.2f}".format(qmi8658.Read_XYZ()[2])
-    #extract to 2 decimal points convert to string and print
-    prnt_st("X:" + str(X_acc),xOrigin,yOrigin,1,25,200,200)
-    prnt_st("Y:" + str(Y_acc),xOrigin,yOrigin - 10,1,25,200,200)
-    prnt_st("Z:" + str(Z_acc),xOrigin,yOrigin - 20,1,25,200,200)
 
-#Read XYZ Values form APDS
-def showXYZgyr(xOrigin,yOrigin):
-    X_gyr = "{:.2f}".format(qmi8658.Read_XYZ()[3])
-    Y_gyr = "{:.2f}".format(qmi8658.Read_XYZ()[4])
-    Z_gyr = "{:.2f}".format(qmi8658.Read_XYZ()[5])
-    #extract to 2 decimal points convert to string and print
-    prnt_st("X:" + str(X_gyr),xOrigin,yOrigin,1,200,200,15)
-    prnt_st("Y:" + str(Y_gyr),xOrigin,yOrigin - 10,1,200,200,15)
-    prnt_st("Z:" + str(Z_gyr),xOrigin,yOrigin - 20,1,200,200,15)
-
-def draw_pie(xCenterPoint, yCenterPoint, faceRadius, start_angle, end_angle, color):
+# Draw an arc/circle segment
+def drawPie(xCenterPoint, yCenterPoint, faceRadius, start_angle, end_angle, color):
     """Draw a 3/4 circle (pie) with the cut-out facing down."""
     start_angle = start_angle  # Start angle in degrees
     end_angle = end_angle   # End angle in degrees
@@ -1156,8 +1210,8 @@ def draw_pie(xCenterPoint, yCenterPoint, faceRadius, start_angle, end_angle, col
         y = int(yCenterPoint + faceRadius * math.sin(theta_rad))
         LCD.line(xCenterPoint, yCenterPoint, x, y, color)
 
-    # Draw Round Face ONE
-def drawFaceONE(xCenterPoint = 70, yCenterPoint = 175, faceRadius = 24):
+# Draw Round Timer
+def drawRoundTimer(xCenterPoint = 70, yCenterPoint = 175, faceRadius = 24):
     circle(xCenterPoint, yCenterPoint, faceRadius, colourConverter(150,100,150))
     circle(xCenterPoint, yCenterPoint, faceRadius - 2,colourConverter(30,130,30))
     circle(xCenterPoint, yCenterPoint, faceRadius -4,colourConverter(30,60,10))	#darkline
@@ -1167,20 +1221,24 @@ def drawFaceONE(xCenterPoint = 70, yCenterPoint = 175, faceRadius = 24):
     LCD.line(xCenterPoint,yCenterPoint,xCenterPoint+sxn,yCenterPoint+syn,c)
 
     # Draw Round Face TWO
-def drawFaceTWO(xCenterPoint = xc, yCenterPoint = 190,faceRadius = 24):
+
+# Draw Round Dashboard
+def drawRoundDashBoard(xCenterPoint = xc, yCenterPoint = 190,faceRadius = 24):
     circle(xCenterPoint, yCenterPoint, faceRadius, colourConverter(100,150,150))
     circle(xCenterPoint, yCenterPoint, faceRadius - 2, colourConverter(130,90,20))
     circle(xCenterPoint, yCenterPoint, faceRadius - 4, colourConverter(30,30,50))	#darkline
     circle(xCenterPoint, yCenterPoint, faceRadius - 6, colourConverter(240,180,10))
     ring(xCenterPoint,yCenterPoint, faceRadius - 8, colourConverter(200,250,80))
-    draw_pie(xCenterPoint, yCenterPoint, faceRadius - 8, -220, 20,colourConverter(20, 20, 20))
-    draw_pie(xCenterPoint, yCenterPoint, faceRadius - 10, -200, 20,colourConverter(200, 200, 200))
+    drawPie(xCenterPoint, yCenterPoint, faceRadius - 8, -220, 20,colourConverter(20, 20, 20))
+    drawPie(xCenterPoint, yCenterPoint, faceRadius - 10, -200, 20,colourConverter(200, 200, 200))
     c = colourConverter(0,0,0)
     LCD.line(xCenterPoint, yCenterPoint, xCenterPoint + mxn, yCenterPoint + myn,c)
     circle(xCenterPoint, yCenterPoint, faceRadius - 20, colourConverter(20,10,10))
     circle(xCenterPoint, yCenterPoint, faceRadius - 22, colourConverter(200,100,10))
     
     # Draw Round Face THREE                                                        
+
+#Draw Round Face THREE
 def drawFaceTHREE(xCenterPoint = 170, yCenterPoint = 175, faceRadius = 24):
     circle(xCenterPoint, yCenterPoint, faceRadius, colourConverter(150,100,150))
     circle(xCenterPoint, yCenterPoint, faceRadius - 2, colourConverter(120,30,130))
@@ -1192,136 +1250,62 @@ def drawFaceTHREE(xCenterPoint = 170, yCenterPoint = 175, faceRadius = 24):
     LCD.line(xCenterPoint, yCenterPoint, xCenterPoint + hxn, yCenterPoint + hyn,c)
 
     # Draw Digital Time
+
+# Draw Digital time Face
 def drawDigitalTime(xOrigin, yOrigin):
     hs = "0"+str(h)
     ms = "0"+str(m)
     ts = hs[-2:] +":"+ms[-2:]
-    prnt_st(ts,xOrigin,yOrigin,1,0,255,0)
+    print_st(ts,xOrigin,yOrigin,1,0,255,0)
     
-    # Draw Bargraphs for six values placed in two rows
-    #TODO: let user define origin positions X and Y
+# Draw Bargraphs for six values placed in two rows
 def infoBarGraph(value1, value2, value3, value4, value5, value6, xOrigin = 40, yOrigin = 70):
     #draw x,y,z allocation text for gyro/accelerometer
-    prnt_st("X",xOrigin + 24,yOrigin - 2,1,200,200,200)
-    prnt_st("Y",xOrigin + 24,yOrigin + 8,1,200,200,200)
-    prnt_st("Z",xOrigin + 24,yOrigin + 18,1,200,200,200)
+    print_st("X",xOrigin + 24,yOrigin - 2,1,200,200,200)
+    print_st("Y",xOrigin + 24,yOrigin + 8,1,200,200,200)
+    print_st("Z",xOrigin + 24,yOrigin + 18,1,200,200,200)
     #draw Accelerometer bargraph
-    draw_horizontal_bargraph(-2, 2, value1, colourConverter(255, 255, 100), colourConverter(155, 155, 155), xOrigin,yOrigin)
-    draw_horizontal_bargraph(-2, 2, value2, colourConverter(0, 100, 255), colourConverter(155, 155, 155), xOrigin,yOrigin + 10)
-    draw_horizontal_bargraph(-2, 2, value3, colourConverter(255, 10, 10), colourConverter(155, 155, 155), xOrigin,yOrigin + 20)
+    drawHorizontalBargraph(-2, 2, value1, colourConverter(255, 255, 100), colourConverter(155, 155, 155), xOrigin,yOrigin)
+    drawHorizontalBargraph(-2, 2, value2, colourConverter(0, 100, 255), colourConverter(155, 155, 155), xOrigin,yOrigin + 10)
+    drawHorizontalBargraph(-2, 2, value3, colourConverter(255, 10, 10), colourConverter(155, 155, 155), xOrigin,yOrigin + 20)
     #draw Gyroscope bargraph
-    draw_horizontal_bargraph(-3, 300, value4, colourConverter(100, 200, 255), colourConverter(155, 155, 155), xOrigin + 32,yOrigin)
-    draw_horizontal_bargraph(-3, 300, value5, colourConverter(50, 255, 50), colourConverter(155, 155, 155), xOrigin + 32,yOrigin + 10)
-    draw_horizontal_bargraph(-3, 300, value6, colourConverter(255, 0, 255), colourConverter(155, 155, 155), xOrigin + 32,yOrigin + 20)
-
-
-#End of draw Funnctions ---------------------------------------------------
-
-#Begin of Utility Functions ----------------------------------------------
-
-# TODO: Replace with the convert to range function
-def calculate_percentage(value, min_value, max_value):
-    """
-    Calculate the percentage of a value between a minimum and maximum value.
-
-    :param value: The float value to calculate the percentage for.
-    :param min_value: The minimum value of the range.
-    :param max_value: The maximum value of the range.
-    :return: The percentage of the value within the range.
-    """
-    if min_value >= max_value:
-        raise ValueError("min_value must be less than max_value")
-    if not (min_value <= value <= max_value):
-        raise ValueError("value must be between min_value and max_value")
-    
-    percentage = ((value - min_value) / (max_value - min_value)) * 100
-    return percentage
-
-def convert_to_range(value, min_value, max_value, min_range, max_range):
-    """
-    Convert a value to a range between -90 and 90.
-
-    :param value: The float value to convert.
-    :param min_value: The minimum value of the original range.
-    :param max_value: The maximum value of the original range.
-    :return: The converted value in the range -90 to 90.
-    """
-    if min_value >= max_value:
-        raise ValueError("min_value must be less than max_value")
-    if not (min_value <= value <= max_value):
-        raise ValueError("value must be between min_value and max_value")
-    
-    # Normalize the value to a range between 0 and 1
-    normalized_value = (value - min_value) / (max_value - min_value)
-    
-    # Scale the normalized value to the range -90 to 90
-    scaled_value = normalized_value * min_range - max_range
-    scaled_value = normalized_value * (max_range - min_range) + min_range
-    return scaled_value
-
-def convert_values_to_range(value1, value2, value3, min_value, max_value, min_range, max_range):
-    """
-    Convert three float values to a range between -90 and 90 and return them as integers.
-
-    :param value1: The first float value to convert.
-    :param value2: The second float value to convert.
-    :param value3: The third float value to convert.
-    :param min_value: The minimum value of the original range.
-    :param max_value: The maximum value of the original range.
-    :return: A tuple of three converted values as integers.
-    """
-    converted_value1 = int(convert_to_range(value1, min_value, max_value, min_range, max_range))
-    converted_value2 = int(convert_to_range(value2, min_value, max_value, min_range, max_range))
-    converted_value3 = int(convert_to_range(value3, min_value, max_value, min_range, max_range))
-    
-    return converted_value1, converted_value2, converted_value3
+    drawHorizontalBargraph(-3, 300, value4, colourConverter(100, 200, 255), colourConverter(155, 155, 155), xOrigin + 32,yOrigin)
+    drawHorizontalBargraph(-3, 300, value5, colourConverter(50, 255, 50), colourConverter(155, 155, 155), xOrigin + 32,yOrigin + 10)
+    drawHorizontalBargraph(-3, 300, value6, colourConverter(255, 0, 255), colourConverter(155, 155, 155), xOrigin + 32,yOrigin + 20)
 
 # Display Battery Status and Level
 def show_battery_level(xOrigin = 180, yOrigin = 114):
-    vBat = calculate_percentage(Vbat.read_u16(), 29000, 43000)
+    vBat = convert_to_range(Vbat.read_u16(), 29000, 43000, 0, 100)
     if 80 <= vBat <= 100:
-        color = colourConverter(0, 200, 0)  # Green
+        color = colourConverter(0, 200, 50)  # Green
     elif 50 <= vBat < 80:
-        color = colourConverter(200, 200, 0)  # Yellow
+        color = colourConverter(200, 200, 50)  # Yellow
     elif 30 <= vBat < 50:
-        color = colourConverter(255, 165, 0)  # Orange
+        color = colourConverter(255, 165, 50)  # Orange
     elif vBat < 30:
         color = colourConverter(255, 0, 0)  # Red
     # Display battery percentage string and %
-    prnt_st("{:.0f}".format(vBat), xOrigin, yOrigin, 1, 205,205,205)  # Message
-    prnt_st("%", xOrigin + 14, yOrigin, 1, 205, 205, 205)  # Message
+    print_st("{:.0f}".format(vBat), xOrigin, yOrigin, 1, 205,205,205)  # Message
+    print_st("%", xOrigin + 14, yOrigin, 1, 205, 205, 205)  # Message
     # Show Battery Level
-    draw_horizontal_bargraph(0, 100, int(vBat), color, colourConverter(155, 155, 155), xOrigin, yOrigin + 10)
+    drawHorizontalBargraph(0, 100, int(vBat), color, colourConverter(155, 155, 155), xOrigin, yOrigin + 10)
 
-# Update timer counter
-def update_time():
-    global s, m, h
-    s += 1
-    if s == 60:
-        s = 0
-        m += 1
-        if m == 60:
-            m = 0
-            h += 1
-            if h == 12:
-                h = 0
+# END OF DRAW FUNCTIONS ---------------------------------------------------------------
+
+
+# MAIN PROGRAM STARTS HERE ---------------------------------------------------
+
+# CREATE OBJECTS
 
 # Create LCD object
 LCD = LCD_1inch28()            #Initialise the display 
 LCD.set_bl_pwm(45535)          # Brightness Original Value 65535
-#Clear the dislay
-def clearDisplay(c):
-    LCD.fill(c)
-
-# Clear the screen
-clearDisplay(0)  
 
 # Create QMI8658 object
 qmi8658 = QMI8658()  # Initialise gyro accl
 if qmi8658 is None:
     raise RuntimeError("Failed to initialize QMI8658 sensor")
-#Read battery voltage
-Vbat= ADC(Pin(Vbat_Pin))      # Lipo voltage pin
+
 # Create graph object
 graph = CartesianGraph(scale=0.2, origin_x=150, origin_y=70)
 
@@ -1331,11 +1315,14 @@ cube = Cube(cube_vertices, cube_edges)
 #  Main loop 
 
 while True:
+    
+    # Clear the screen
+    clearDisplay(0)  
 
     # Call the function to draw scale ticks
     draw_scale_ticks()
 
-    #Draw border lines
+    #Draw Round border lines
     drawBorders()
     
     # Calculate coordinates of end of second pointer
@@ -1348,53 +1335,47 @@ while True:
     alpha = (h*60+m)*360/720
     hxn, hyn = end_point(alpha, sr)
 
-    # Update Accelerometer and Gyroscope values
-    Ax, Ay, Az, Gx, Gy, Gz = qmi8658.Read_XYZ()
-
-    # Convert Accelerometer values to range
-    converted_gyro_values = convert_values_to_range(Gx, Gy, Gz, -600, 600, 0, 10)
+    # UPDATE ACCELEROMETER AND GYROSCOPE VALUES
+    Ax, Ay, Az, Gx, Gy, Gz = qmi8658.Read_XYZ()    # Update Accelerometer and Gyroscope values
+    converted_gyro_values = convert_values_to_range(Gx, Gy, Gz, -600, 600, 0, 10)    # Convert Accelerometer values to range
     
-    # Start timer
+    # Start/Update timer
     update_time()
                 
-    # Central circle
+    # Add Central circle
     circle(xc,yc,110,colourConverter(30,30,30))
     
-    #Draw Rotary Degrees 
+    # Add Rotary Degrees 
     drawDegrees()
     
-    # Call the function to show battery level
+    # Add/Update battery level
+    Vbat= ADC(Pin(Vbat_Pin))    #Update battery voltage
     show_battery_level()
     
     # Add Digital clockFace
     drawDigitalTime(136,30)
 
     # Add Round ClockFace ONE
-    drawFaceONE()
-    # Add Round ClockFace TWO
-    drawFaceTWO()
+    drawRoundTimer()
+    # Add Round Dashboard
+    drawRoundDashBoard(xc, 190, 26)
     # Add Round ClockFace THREE
     drawFaceTHREE()
     
-    # Display bargraph for Accelerometer and Gyroscope
+    # Add bargraph for Accelerometer and Gyroscope
     infoBarGraph(Ax, Ay, Az, converted_gyro_values[0],converted_gyro_values[1],converted_gyro_values[2])
     
-    # Display Cartesian Graph
-    # Add new values (replace with actual sensor readings or data)
-    graph.add_values(Gx,Gy,Gz)
-    # Draw the graph
-    graph.draw()
+    # Add Cartesian Graph
+    graph.add_values(Gx, Gy, Gz)    # Add new values to the graph
+    graph.draw() # Draw the graph
     
-    # Updated angles and draw cube
-    cube.update_angles(Gx, Gy, Gz)
-    cube.draw()
+    # Update cube angles / Add cube
+    cube.update_angles(Gx, Gy, Gz)  # Update the angles of the cube
+    cube.draw() # Draw the cube
     
     # Draw logo
-    drawLogo(80,36)
+    drawLogo(80,36) # Draw the logo at the specified coordinates
     
     # Update screen
     LCD.show()
-
-
-
 
