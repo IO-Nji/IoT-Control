@@ -1,2 +1,2 @@
 # IoT-Control
-An ESP8266 based buttons and switches controller
+An ESP32 based displays | buttons | switches | Web controller
