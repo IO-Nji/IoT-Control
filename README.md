@@ -1,2 +1,2 @@
-# IoT-Control
-An ESP32 based displays | buttons | switches | Web controller
+# IoT-Control-MicroPython
+An ESP32 based displays | Buttons | Switches | Web Controller
