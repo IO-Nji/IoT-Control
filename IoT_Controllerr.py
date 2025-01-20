@@ -1,3 +1,4 @@
+# IoT Controller Class
 
 """
 IoT Controllerr - Demo Code
@@ -57,9 +58,6 @@ from lcdDisplay import LCD_1inch28
 import framebuf # type: ignore
 import time
 import math
-
-# BATTERY VOLTAGE Measuring Pin
-vBat = 29
 
 # DISPLAY SPECIFICATIONS
 
@@ -239,10 +237,6 @@ class Point:
         self.Y=y
     def __str__(self):
         return "Point(%s,%s)"%(self.X,self.Y) 
-
-
-
-# LCD Display GRAPHICS | DRAWING FUNCTIONS -----------------------------------------------------------------
 
 
 # UTILITY FUNCTIONS ---------------------------------------------------------------
@@ -494,7 +488,7 @@ LCD.set_bl_pwm(45535)          # Brightness Original Value 65535
 # Create QMI8658 object
 qmi8658 = QMI8658()  # Initialise gyro accl
 if qmi8658 is None:
-    raise RuntimeError("Failed to initialize QMI8658 sensor")
+    raise RuntimeError("Failed to initialize QMI8658 sensor") #TODO: Use logging
 
 # Create graph object
 graph = CartesianGraph(scale=0.2, origin_x=150, origin_y=70)
@@ -503,7 +497,7 @@ graph = CartesianGraph(scale=0.2, origin_x=150, origin_y=70)
 cube = Cube(cube_vertices, cube_edges)
 
 # Create Battery Object
-battery = Battery(vBat)
+battery = Battery()
 def battStat():   
         voltage = convert_to_range(battery.readVoltage(), 28000, 43000, 0, 100)
         return voltage
