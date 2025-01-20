@@ -131,10 +131,10 @@ class CartesianGraph:
             self.values3.pop(0)
     def draw(self):
         # Clear the graph area
-        rect(self.origin_x, self.origin_y, self.origin_x + self.width, self.origin_y + self.height +14, LCD.colourConverter(0, 0, 0))
+        LCD.rect(self.origin_x, self.origin_y, self.origin_x + self.width, self.origin_y + self.height +14, LCD.colourConverter(0, 0, 0))
 
         # Draw the graph border
-        rect(self.origin_x-4, self.origin_y-4, self.origin_x + self.width + 4, self.origin_y + self.height + 12, LCD.colourConverter(55, 55, 55))
+        LCD.rect(self.origin_x-4, self.origin_y-4, self.origin_x + self.width + 4, self.origin_y + self.height + 12, LCD.colourConverter(55, 55, 55))
 
         # Define the colors for the three values
         color1 = LCD.colourConverter(255, 0, 0)  # Red
@@ -147,15 +147,15 @@ class CartesianGraph:
             y1 = self.origin_y + self.height // 2 - int(self.values1[i - 1] * self.scale)
             x2 = self.origin_x + i
             y2 = self.origin_y + self.height // 2 - int(self.values1[i] * self.scale)
-            draw_line(x1, y1, x2, y2, color1)
+            LCD.drawLine(x1, y1, x2, y2, color1)
 
             y1 = self.origin_y + self.height // 2 - int(self.values2[i - 1] * self.scale)
             y2 = self.origin_y + self.height // 2 - int(self.values2[i] * self.scale)
-            draw_line(x1, y1, x2, y2, color2)
+            LCD.drawLine(x1, y1, x2, y2, color2)
 
             y1 = self.origin_y + self.height // 2 - int(self.values3[i - 1] * self.scale)
             y2 = self.origin_y + self.height // 2 - int(self.values3[i] * self.scale)
-            draw_line(x1, y1, x2, y2, color3)
+            LCD.drawLine(x1, y1, x2, y2, color3)
 # Cube Class
 class Cube:
     def __init__(self, vertices, edges, scale_factor=1):
@@ -213,13 +213,13 @@ class Cube:
             x1, y1 = projected_vertices[start]
             x2, y2 = projected_vertices[end]
             if i == 0:
-                draw_line(x1, y1, x2, y2, first_line_color)
+                LCD.drawLine(x1, y1, x2, y2, first_line_color)
             elif i == 1:
-                draw_line(x1, y1, x2, y2, second_line_color)
+                LCD.drawLine(x1, y1, x2, y2, second_line_color)
             elif i == 9:
-                draw_line(x1, y1, x2, y2, third_line_color)
+                LCD.drawLine(x1, y1, x2, y2, third_line_color)
             else:
-                draw_line(x1, y1, x2, y2, color)
+                LCD.drawLine(x1, y1, x2, y2, color)
 
     def update_angles(self, gyr_x, gyr_y, gyr_z, speed = 1):
         """Update the rotation angles based on gyroscope values"""
@@ -240,114 +240,18 @@ class Point:
     def __str__(self):
         return "Point(%s,%s)"%(self.X,self.Y) 
 
+
+
 # LCD Display GRAPHICS | DRAWING FUNCTIONS -----------------------------------------------------------------
-# Draw a line
-def draw_line(x1, y1, x2, y2, color):
-    if x1 == x2:
-        # Vertical line
-        LCD.vline(x1, min(y1, y2), abs(y2 - y1), color)
-    elif y1 == y2:
-        # Horizontal line
-        LCD.hline(x1, y1, abs(x2 - x1), color)
-    else:
-        # Diagonal line (Bresenham's line algorithm)
-        dx = abs(x2 - x1)
-        dy = abs(y2 - y1)
-        sx = 1 if x1 < x2 else -1
-        sy = 1 if y1 < y2 else -1
-        err = dx - dy
-
-        while True:
-            LCD.pixel(x1, y1, color)
-            if x1 == x2 and y1 == y2:
-                break
-            e2 = err * 2
-            if e2 > -dy:
-                err -= dy
-                x1 += sx
-            if e2 < dx:
-                err += dx
-                y1 += sy
-# Draw a Rectangle (Without fill)
-def rect(x1,y1,x2,y2,c):
-    LCD.hline(x1,y1,x2-x1,c)
-    LCD.hline(x1,y2,x2-x1,c)
-    LCD.vline(x1,y1,y2-y1,c)
-    LCD.vline(x2,y1,y2-y1,c)
-# Draw a Circle (Circle with Fill)
-def circle(x,y,r,c):
-    LCD.hline(x-r,y,r*2,c)
-    for i in range(1,r):
-        a = int(math.sqrt(r*r-i*i)) # Pythagoras!
-        LCD.hline(x-a,y+i,a*2,c) # Lower half
-        LCD.hline(x-a,y-i,a*2,c) # Upper half
-# Draw a Ring (Circle without fill)
-def ring(x,y,r,c):
-    LCD.pixel(x-r,y,c)
-    LCD.pixel(x+r,y,c)
-    LCD.pixel(x,y-r,c)
-    LCD.pixel(x,y+r,c)
-    for i in range(1,r):
-        a = int(math.sqrt(r*r-i*i))
-        LCD.pixel(x-a,y-i,c)
-        LCD.pixel(x+a,y-i,c)
-        LCD.pixel(x-a,y+i,c)
-        LCD.pixel(x+a,y+i,c)
-        LCD.pixel(x-i,y-a,c)
-        LCD.pixel(x+i,y-a,c)
-        LCD.pixel(x-i,y+a,c)
-        LCD.pixel(x+i,y+a,c)
-# Draw an arc/circle segment
-def drawPie(xCenterPoint, yCenterPoint, faceRadius, start_angle, end_angle, color):
-    """Draw a 3/4 circle (pie) with the cut-out facing down."""
-    start_angle = start_angle  # Start angle in degrees
-    end_angle = end_angle   # End angle in degrees
-
-    for angle in range(start_angle, end_angle):
-        theta_rad = math.radians(angle)
-        x = int(xCenterPoint + faceRadius * math.cos(theta_rad))
-        y = int(yCenterPoint + faceRadius * math.sin(theta_rad))
-        LCD.line(xCenterPoint, yCenterPoint, x, y, color)
-
-def drawChar(asc,xt,yt,sz, r,g,b):
-    LCD.character(asc,xt,yt,sz,r,g,b)  # Single character sz is size: 1 or 2
-    #  FONT SUPPORT BEGIN --------------------------------------------
-
-
-# FONT SUPPORT ---------------------------------------------------------------------
-# Standard ASCII 5x8 font
-# https://gist.github.com/tdicola/229b3eeddc12d58fb0bc724a9062aa05
-
-
-# Print Text as String
-def print_st(asci,xx,yy,sz,r,g,b):  
-    if sz == 1: move = 6
-    if sz == 2: move = 11
-    if sz == 3: move = 17 
-    for letter in(asci):
-        asci = ord(letter)
-        drawChar(asci,xx,yy,sz,r,g,b)
-        xx = xx + move
-# Centres text on line y and print
-def print_yc(s,y,sz,r,g,b): 
-    if sz == 1: w = 6
-    if sz == 2: w = 11
-    if sz == 3: w = 17 
-    gap = int((width - len(s) * w)/2)
-    print_st(s,gap,y,sz,r,g,b)
-
-# FONT SUPPORT END ----------------------------------------------------------------
 
 
 # UTILITY FUNCTIONS ---------------------------------------------------------------
-
 # Board now setup  MAIN BELOW
 def end_point(theta, rr): # Calculate end of hand offsets
     theta_rad = math.radians(theta)    
     xx = int(rr * math.sin(theta_rad))
     yy = -int(rr * math.cos(theta_rad))                     
     return xx,yy
-
 # Cnvert value to a range
 def convert_to_range(value, min_value, max_value, min_range, max_range):
     """
@@ -430,7 +334,7 @@ def drawLogo(origin_x=0, origin_y=0, scale=.8):
     ]
     color = LCD.colourConverter(255, 255, 255)
     for x1, y1, x2, y2 in coordinates:
-        rect(int(x1 * scale) + origin_x, int(y1 * scale) + origin_y, int(x2 * scale) + origin_x, int(y2 * scale) + origin_y, color)
+        LCD.rect(int(x1 * scale) + origin_x, int(y1 * scale) + origin_y, int(x2 * scale) + origin_x, int(y2 * scale) + origin_y, color)
 # draw horizontal Bargraph
 def drawHorizontalBargraph(min_value, max_value, current_value, graph_color, border_color, bar_x = 40, bar_y = 90):
 
@@ -456,38 +360,38 @@ def drawHorizontalBargraph(min_value, max_value, current_value, graph_color, bor
     filled_width = int((current_value - min_value) / (max_value - min_value) * bar_width)
     
     # Draw the border of the bargraph
-    rect(bar_x, bar_y, bar_x + bar_width, bar_y + bar_height, border_color)
+    LCD.rect(bar_x, bar_y, bar_x + bar_width, bar_y + bar_height, border_color)
     
     # Draw the filled part of the bargraph
-    rect(bar_x, bar_y, bar_x + filled_width, bar_y + bar_height, graph_color)
-# Draw Clock Numbers 1 to 12 in a circle
+    LCD.rect(bar_x, bar_y, bar_x + filled_width, bar_y + bar_height, graph_color)
+# Draw Clock Numbers 1 to 12 in a LCD.circle
 def drawRoundClockFaceNumbers():
-    print_st("7",70,186,1,250,255,250)
-    print_st("5",158,186,1,250,255,250)
-    print_st("8",42,160,1,250,255,250)
-    print_st("4",190,160,1,250,255,250)
-    print_st("10",40,70,1,250,255,250)
-    print_st("2",190,70,1,250,255,250)
-    print_st("11",70,35,1,250,255,250)
-    print_st("1",157,35,1,250,255,250)
+    LCD.print_st("7",70,186,1,250,255,250)
+    LCD.print_st("5",158,186,1,250,255,250)
+    LCD.print_st("8",42,160,1,250,255,250)
+    LCD.print_st("4",190,160,1,250,255,250)
+    LCD.print_st("10",40,70,1,250,255,250)
+    LCD.print_st("2",190,70,1,250,255,250)
+    LCD.print_st("11",70,35,1,250,255,250)
+    LCD.print_st("1",157,35,1,250,255,250)
 
-    print_yc("12",15,2,0,60,100)
-    print_yc("6",210,2,0,60,100)
-    print_st("9",17,115,2,0,60,100)
-    print_st("3",204,115,2,0,60,100)  
+    LCD.print_yc("12",15,2,0,60,100)
+    LCD.print_yc("6",210,2,0,60,100)
+    LCD.print_st("9",17,115,2,0,60,100)
+    LCD.print_st("3",204,115,2,0,60,100)  
 # Draw Degrees 0, 90, 180, 270 on the clock face
 def drawDegrees(): #TODO: rename 
-    print_yc("0",15,1,30,160,180)
-    print_yc("180",220,1,30,160,180)
-    print_st("270",17,115,1,30,160,180)
-    print_st("90",216,115,1,30,160,180)
-# Draw the clock face border and ring circles
-def drawBorders():
-    circle(xc,yc,118,LCD.colourConverter(100,120,180))
-    ring(xc,yc,114,LCD.colourConverter(20,80,255))
-    ring(xc,yc,115,LCD.colourConverter(250,80,120))
-    ring(xc,yc,116,LCD.colourConverter(250,80,120))
-    circle(xc,yc,114,LCD.colourConverter(100,180,120))
+    LCD.print_yc("0",15,1,30,160,180)
+    LCD.print_yc("180",220,1,30,160,180)
+    LCD.print_st("270",17,115,1,30,160,180)
+    LCD.print_st("90",216,115,1,30,160,180)
+# Draw the clock face border and ring 
+def outerRings():
+    LCD.circle(xc,yc,118,LCD.colourConverter(100,120,180))
+    LCD.ring(xc,yc,114,LCD.colourConverter(20,80,255))
+    LCD.ring(xc,yc,115,LCD.colourConverter(250,80,120))
+    LCD.ring(xc,yc,116,LCD.colourConverter(250,80,120))
+    LCD.circle(xc,yc,114,LCD.colourConverter(100,180,120))
 # Display - Round Clock Scale ticks -  lines from centre   
 def drawClockScale():
     for p in range(0, 360, 30):
@@ -495,34 +399,35 @@ def drawClockScale():
         LCD.line(120, 120, 120 + hxn, 120 + hyn, LCD.colourConverter(255, 255, 255))
 # Display - Round Timer
 def drawRoundTimer(xCenterPoint = 70, yCenterPoint = 175, faceRadius = 24):
-    circle(xCenterPoint, yCenterPoint, faceRadius, LCD.colourConverter(150,100,150))
-    circle(xCenterPoint, yCenterPoint, faceRadius - 2,LCD.colourConverter(30,130,30))
-    circle(xCenterPoint, yCenterPoint, faceRadius -4,LCD.colourConverter(30,60,10))	#darkline
-    circle(xCenterPoint, yCenterPoint, faceRadius -6,LCD.colourConverter(180,40,80))
-    ring(xCenterPoint, yCenterPoint, faceRadius - 8,LCD.colourConverter(250,70,170))
+    LCD.circle(xCenterPoint, yCenterPoint, faceRadius, LCD.colourConverter(150,100,150))
+    LCD.circle(xCenterPoint, yCenterPoint, faceRadius - 2,LCD.colourConverter(30,130,30))
+    LCD.circle(xCenterPoint, yCenterPoint, faceRadius -4,LCD.colourConverter(30,60,10))	#darkline
+    LCD.circle(xCenterPoint, yCenterPoint, faceRadius -6,LCD.colourConverter(180,40,80))
+    LCD.circle(xCenterPoint, yCenterPoint, faceRadius -6,LCD.colourConverter(150,140,140))
+    LCD.ring(xCenterPoint, yCenterPoint, faceRadius - 8,LCD.colourConverter(250,70,170))
     c = LCD.colourConverter(255,255,0)
     LCD.line(xCenterPoint,yCenterPoint,xCenterPoint+calcPointerPos()[0],yCenterPoint+calcPointerPos()[1],c)
 # Display - Round Dashboard
 def drawRoundDashBoard(xCenterPoint = xc, yCenterPoint = 190,faceRadius = 24):
-    circle(xCenterPoint, yCenterPoint, faceRadius, LCD.colourConverter(100,150,150))
-    circle(xCenterPoint, yCenterPoint, faceRadius - 2, LCD.colourConverter(130,90,20))
-    circle(xCenterPoint, yCenterPoint, faceRadius - 4, LCD.colourConverter(30,30,50))	#darkline
-    circle(xCenterPoint, yCenterPoint, faceRadius - 6, LCD.colourConverter(240,180,10))
-    ring(xCenterPoint,yCenterPoint, faceRadius - 8, LCD.colourConverter(200,250,80))
-    drawPie(xCenterPoint, yCenterPoint, faceRadius - 8, -220, 20,LCD.colourConverter(20, 20, 20))
-    drawPie(xCenterPoint, yCenterPoint, faceRadius - 10, -200, 20,LCD.colourConverter(200, 200, 200))
+    LCD.circle(xCenterPoint, yCenterPoint, faceRadius, LCD.colourConverter(100,150,150))
+    LCD.circle(xCenterPoint, yCenterPoint, faceRadius - 2, LCD.colourConverter(130,90,20))
+    LCD.circle(xCenterPoint, yCenterPoint, faceRadius - 4, LCD.colourConverter(30,30,50))	#darkline
+    LCD.circle(xCenterPoint, yCenterPoint, faceRadius - 6, LCD.colourConverter(240,180,10))
+    LCD.ring(xCenterPoint,yCenterPoint, faceRadius - 8, LCD.colourConverter(200,250,80))
+    LCD.drawPie(xCenterPoint, yCenterPoint, faceRadius - 8, -220, 20,LCD.colourConverter(20, 20, 20))
+    LCD.drawPie(xCenterPoint, yCenterPoint, faceRadius - 10, -200, 20,LCD.colourConverter(200, 200, 200))
     c = LCD.colourConverter(0,0,0)
     LCD.line(xCenterPoint, yCenterPoint, xCenterPoint + calcPointerPos()[2], yCenterPoint + calcPointerPos()[3],c)
-    circle(xCenterPoint, yCenterPoint, faceRadius - 20, LCD.colourConverter(20,10,10))
-    circle(xCenterPoint, yCenterPoint, faceRadius - 22, LCD.colourConverter(200,100,10))                                                    
+    LCD.circle(xCenterPoint, yCenterPoint, faceRadius - 20, LCD.colourConverter(20,10,10))
+    LCD.circle(xCenterPoint, yCenterPoint, faceRadius - 22, LCD.colourConverter(200,100,10))                                                    
 #Draw Round Face THREE
 def drawFaceTHREE(xCenterPoint = 170, yCenterPoint = 175, faceRadius = 24):
-    circle(xCenterPoint, yCenterPoint, faceRadius, LCD.colourConverter(150,100,150))
-    circle(xCenterPoint, yCenterPoint, faceRadius - 2, LCD.colourConverter(120,30,130))
-    circle(xCenterPoint, yCenterPoint, faceRadius - 4, LCD.colourConverter(30,60,10))   #darkline
-    circle(xCenterPoint, yCenterPoint, faceRadius - 6, LCD.colourConverter(10,120,120))
+    LCD.circle(xCenterPoint, yCenterPoint, faceRadius, LCD.colourConverter(150,100,150))
+    LCD.circle(xCenterPoint, yCenterPoint, faceRadius - 2, LCD.colourConverter(120,30,130))
+    LCD.circle(xCenterPoint, yCenterPoint, faceRadius - 4, LCD.colourConverter(30,60,10))   #darkline
+    LCD.circle(xCenterPoint, yCenterPoint, faceRadius - 6, LCD.colourConverter(10,120,120))
 
-    ring(xCenterPoint, yCenterPoint, faceRadius - 8, LCD.colourConverter(200,80,250))
+    LCD.ring(xCenterPoint, yCenterPoint, faceRadius - 8, LCD.colourConverter(200,80,250))
     c = LCD.colourConverter(255,255,255)
     LCD.line(xCenterPoint, yCenterPoint, xCenterPoint + calcPointerPos()[4], yCenterPoint + calcPointerPos()[5],c)
 
@@ -532,13 +437,14 @@ def drawDigitalTime(xOrigin, yOrigin):
     hs = "0"+str(h)
     ms = "0"+str(m)
     ts = hs[-2:] +":"+ms[-2:]
-    print_st(ts,xOrigin,yOrigin,1,0,255,0)
+    LCD.print_st(ts,xOrigin,yOrigin,1,0,255,0)
  # Draw Bargraphs for six values placed in two rows
+# Draw Bargraphs for six values placed in two rows
 def infoBarGraph(value1, value2, value3, value4, value5, value6, xOrigin = 40, yOrigin = 70):
     #draw x,y,z allocation text for gyro/accelerometer
-    print_st("X",xOrigin + 24,yOrigin - 2,1,200,200,200)
-    print_st("Y",xOrigin + 24,yOrigin + 8,1,200,200,200)
-    print_st("Z",xOrigin + 24,yOrigin + 18,1,200,200,200)
+    LCD.print_st("X",xOrigin + 24,yOrigin - 2,1,200,200,200)
+    LCD.print_st("Y",xOrigin + 24,yOrigin + 8,1,200,200,200)
+    LCD.print_st("Z",xOrigin + 24,yOrigin + 18,1,200,200,200)
     #draw Accelerometer bargraph
     drawHorizontalBargraph(-2, 2, value1, LCD.colourConverter(255, 255, 100), LCD.colourConverter(155, 155, 155), xOrigin,yOrigin)
     drawHorizontalBargraph(-2, 2, value2, LCD.colourConverter(0, 100, 255), LCD.colourConverter(155, 155, 155), xOrigin,yOrigin + 10)
@@ -550,23 +456,22 @@ def infoBarGraph(value1, value2, value3, value4, value5, value6, xOrigin = 40, y
 # Display Battery Status and Level
 def displayBattStatus(battLvl, xOrigin=180, yOrigin=114):
      # Display battery percentage string and %
-    print_st("{:.0f}".format(battLvl), xOrigin, yOrigin, 1, 205, 205, 205)  # Message
-    print_st("%", xOrigin + 14, yOrigin, 1, 205, 205, 205)  # Message
+    LCD.print_st("{:.0f}".format(battLvl), xOrigin, yOrigin, 1, 205, 205, 205)  # Message
+    LCD.print_st("%", xOrigin + 14, yOrigin, 1, 205, 205, 205)  # Message
     # Show Battery Level
     drawHorizontalBargraph(0, 100, int(battLvl), LCD.colourConverter(20, 255, 40), LCD.colourConverter(155, 155, 155), xOrigin, yOrigin + 10)
-
 # Display Cube
 def showCube(Gx, Gy, Gz):
     gyro = convert_values_to_range(Gx, Gy, Gz, -600, 600, 0, 10)    # Convert Accelerometer values to range
     cube.update_angles(Gx, Gy, Gz)  # Update the angles of the cube
-    cube.draw() # Draw the cube
-    
+    cube.draw() # Draw the cube 
 # UPDATE ACCELEROMETER AND GYROSCOPE VALUES
 def getAcclGyroValues():
         Ax, Ay, Az, Gx, Gy, Gz = qmi8658.Read_XYZ()
         rawGyro = (Gx, Gy, Gz)
         rawAccl = (Ax, Ay, Az)
         return rawAccl, rawGyro
+# Scale Accelerometer and Gyroscope for Graph
 def scaleAcclGyro(rawAccl, rawGyro):
     accl = convert_values_to_range(rawAccl[0], rawAccl[1], rawAccl[2], -600, 600, 0, 10)    # Convert Accelerometer values to range
     gyro = convert_values_to_range(rawGyro[0], rawGyro[1], rawGyro[2], -600, 600, 0, 10)    # Convert Gyroscope values to range
@@ -576,8 +481,6 @@ def showGraph(Gx, Gy, Gz):
     graph.add_values(Gx, Gy, Gz)    # Add new values to the graph
     graph.draw() # Draw the graph
 
-    
-# END OF DRAW FUNCTIONS ---------------------------------------------------------------------
 
 
 # MAIN PROGRAM STARTS HERE ---------------------------------------------------
@@ -605,60 +508,71 @@ def battStat():
         voltage = convert_to_range(battery.readVoltage(), 28000, 43000, 0, 100)
         return voltage
 #  Main loop 
+class main():
 
-while True:
-    
-    # Clear the screen
-    LCD.fill(0x000000)
+    # MAIN PROGRAM STARTS HERE ---------------------------------------------------
+    def __init__(self):
+        pass    
 
-    #Get Accelerometer and Gyroscope values
-    rawAccl, rawGyro = getAcclGyroValues()
-    accl, gyro = scaleAcclGyro(rawAccl, rawGyro)
+    def run(self):
+            
+        while True:
+            
+            # Clear the screen
+            LCD.fill(0x000000)
 
-    # Call the function to draw scale ticks
-    drawClockScale()
+            #Get Accelerometer and Gyroscope values
+            rawAccl, rawGyro = getAcclGyroValues()
+            accl, gyro = scaleAcclGyro(rawAccl, rawGyro)
 
-    #Draw Round border lines
-    drawBorders()
-    
-    # Calculate coordinates for pointers
-    calcPointerPos()
-    
-    # Start/Update timer
-    update_time()
+            # Call the function to draw scale ticks
+            drawClockScale()
 
-    # Display Background circle
-    circle(xc,yc,110,LCD.colourConverter(30, 30,30 ))
-    
-    # Display Rotary Degrees 
-    drawDegrees()
-    
-    # Display battery info
-    displayBattStatus(battStat())
-    
-    # Display Digital clockFace
-    drawDigitalTime(136,30)
+            #Draw Round border lines
+            outerRings()
+            
+            # Calculate coordinates for pointers
+            calcPointerPos()
+            
+            # Start/Update timer
+            update_time()
 
-    # Display Round ClockFace ONE
-    drawRoundTimer()
+            # Display Background LCD.circle
+            LCD.circle(xc,yc,110,LCD.colourConverter(30, 30,30 ))
+            
+            # Display Rotary Degrees 
+            drawDegrees()
+            
+            # Display battery info
+            displayBattStatus(battStat())
+            
+            # Display Digital clockFace
+            drawDigitalTime(136,30)
 
-    # Display Round Dashboard
-    drawRoundDashBoard(xc, 190, 26)
+            # Display Round ClockFace ONE
+            drawRoundTimer()
 
-    # Display Round ClockFace THREE
-    drawFaceTHREE()
-    
-    # Display Bargraph
-    infoBarGraph( gyro[0], gyro[1], gyro[2], accl[0], accl[1], accl[2])
-    
-    # Display Cartesian Graph
-    showGraph(rawGyro[0], rawGyro[1], rawGyro[2])
-    
-    # Display Cube
-    showCube(gyro[0], gyro[1], gyro[2])
-    
-    # Display logo
-    drawLogo(80,36) # Draw the logo at the specified coordinates
-    
-    # Update screen
-    LCD.show()
+            # Display Round Dashboard
+            drawRoundDashBoard(xc, 190, 26)
+
+            # Display Round ClockFace THREE
+            drawFaceTHREE()
+            
+            # Display Bargraph
+            infoBarGraph( gyro[0], gyro[1], gyro[2], accl[0], accl[1], accl[2])
+            
+            # Display Cartesian Graph
+            showGraph(rawGyro[0], rawGyro[1], rawGyro[2])
+            
+            # Display Cube
+            showCube(gyro[0], gyro[1], gyro[2])
+            
+            # Display logo
+            drawLogo(80,36) # Draw the logo at the specified coordinates
+            
+            # Update screen
+            LCD.show()
+
+
+if __name__ == '__main__':
+    main().run()
