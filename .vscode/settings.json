@@ -1,0 +1,7 @@
+{
+    "python.analysis.extraPaths": [
+        "./oled_",
+        "./oled_",
+        "./lib"
+    ]
+}

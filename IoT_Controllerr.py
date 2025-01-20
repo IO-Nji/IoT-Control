@@ -53,6 +53,7 @@ GFX and Text from Tony Goodhew routines are included in full - enjoy# 22nd June 
 
 from machine import Pin,I2C,SPI,PWM,ADC # type: ignore
 from battery import Battery
+from oled_64 import Oled_64
 from qmi8658 import QMI8658
 from lcdDisplay import LCD_1inch28
 import framebuf # type: ignore
@@ -501,6 +502,16 @@ battery = Battery()
 def battStat():   
         voltage = convert_to_range(battery.readVoltage(), 28000, 43000, 0, 100)
         return voltage
+
+# Usage:
+oled = Oled_64(128, 64, 6, 7)
+
+def oledLogo():
+    oled.clear_display()
+    oled.drawLogo(0, 0)
+    oled.display_text(" IoT pico", 40, 25)
+    oled.display.show()
+
 #  Main loop 
 class main():
 
@@ -511,6 +522,9 @@ class main():
     def run(self):
             
         while True:
+
+            # Display Logo on OLED
+            oledLogo()
             
             # Clear the screen
             LCD.fill(0x000000)
@@ -570,3 +584,4 @@ class main():
 
 if __name__ == '__main__':
     main().run()
+
